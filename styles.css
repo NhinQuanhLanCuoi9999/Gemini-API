@@ -1,0 +1,239 @@
+   /* Thêm font Poppins và các thiết lập chung cho toàn trang */
+body {
+    font-family: 'Poppins', sans-serif;
+    padding: 20px;
+    margin: 0;
+    height: 100%;
+    background-color: #212121;
+    color: #333;
+    font-size: 15px; /* Cố định kích thước chữ cho toàn bộ trang */
+}
+
+/* Tiêu đề */
+h1 {
+    text-align: center;
+    color: #333;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Form nhập liệu ở cuối trang */
+#queryForm {
+    text-align: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0); /* Màu nền trong suốt */
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    z-index: 1000;
+    margin-bottom: 50px; /* Tạo khoảng cách 50px từ dưới cùng */
+}
+
+/* Ẩn phần tử cha nhưng vẫn giữ phần tử con hiển thị */
+#queryForm.hidden {
+    visibility: hidden; /* Ẩn phần tử cha nhưng giữ phần tử con hiển thị */
+    position: absolute;
+    z-index: -1; /* Đưa phần tử ra khỏi vùng nhìn thấy */
+}
+
+/* Khu vực chứa kết quả */
+#resultContainer {
+    margin-top: 30px;
+    padding-bottom: 130px; /* Tạo khoảng cách dưới cùng */
+    overflow-y: auto;
+    height: calc(75vh - 80px); /* Giảm chiều cao để dành khoảng trống cho form */
+    background-color: #212121;
+    border-radius: 15px;
+    padding: 20px;
+    z-index: 1000;
+    font-size: 15px; /* Cố định kích thước chữ trong vùng kết quả */
+}
+/* Vùng nhập văn bản */
+textarea {
+    width: 65%;
+    height: 80px;
+    padding: 12px;
+    font-size: 15px; /* Cố định kích thước chữ trong textarea */
+    border: 2px solid #2f2f2f; /* Màu viền mới */
+    border-radius: 15px; /* Viền cong hơn */
+    resize: none;
+    outline: none;
+    transition: border-color 0.3s, opacity 0.3s; /* Thêm hiệu ứng cho opacity */
+    opacity: 0.3; /* Opacity ban đầu */
+}
+
+textarea:hover,
+textarea:focus {
+    opacity: 1; /* Khi hover hoặc focus vào textarea thì opacity là 100% */
+}
+
+/* Khi focus vào textarea */
+textarea:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
+}
+
+/* Nút gửi */
+#sendButton {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, blue, dodgerblue); /* Áp dụng gradient ban đầu */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s; /* Thêm hiệu ứng opacity */
+    opacity: 0.3; /* Opacity ban đầu */
+}
+
+#sendButton:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    opacity: 1; /* Đổi opacity khi hover */
+}
+
+#sendButton i {
+    color: white;
+    font-size: 26px;
+}
+
+/* Tin nhắn */
+.message {
+ background: linear-gradient(to right, #9B4D96, #2E3A8C, #1A8EBC);
+    margin: 12px 0;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideFadeIn 0.5s forwards;
+    font-size: 15px; /* Cố định kích thước chữ */
+    word-wrap: break-word; /* Cho phép dòng chữ tự động xuống dòng */
+    white-space: normal; /* Đảm bảo chữ không bị cắt hay tràn ra ngoài */
+    max-width: 100%; /* Không vượt quá chiều rộng của container */
+    overflow-wrap: break-word; /* Giúp đoạn văn dài không bị tràn ra ngoài */
+    line-height: 1.4; /* Đảm bảo khoảng cách giữa các dòng */
+}
+/* Tin nhắn người dùng */
+.user-message {
+    background: linear-gradient(to right, #2E3A8C, #4B0082, #800080);
+    border-left: 5px solid #800080 ;
+    color: white;  /* Chữ màu trắng */
+    font-size: 15px; /* Cố định kích thước chữ */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Tin nhắn phản hồi từ Gemini */
+.gemini-response {
+    background: linear-gradient(to right, #800080,  #2E3A8C, #00bcd4);
+    border-left: 5px solid #00bcd4 ;
+    color: white;  /* Chữ màu trắng */
+    animation-delay: 0.2s;
+    font-size: 15px; /* Cố định kích thước chữ */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+/* Mã code trong khung */
+code {
+    display: block;
+    background-color: #424242;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    overflow-x: auto;
+    white-space: pre-wrap; /* Giúp hiển thị nội dung code mà không bị tràn */
+    color: white;
+    font-size: 15px; /* Cố định kích thước chữ */
+    margin-top: 8px;
+    word-wrap: break-word;
+}
+
+/* Hiệu ứng trượt lên và mờ dần */
+@keyframes slideFadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Nút copy mã code */
+.copy-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 15px; /* Cố định kích thước chữ cho nút copy */
+}
+
+/* Nút kéo xuống cuối trang */
+#scrollToBottomBtn {
+    position: fixed;
+    right: 20px;
+    bottom: 110px;
+    background-color: transparent;
+    color: white;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+   transition: transform 0.2s, background-color 0.3s;
+}
+
+#scrollToBottomBtn:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}
+
+#scrollToBottomBtn i {
+    font-size: 26px;
+}
+
+/* Thông báo "Đang xử lý..." */
+#loadingMessage {
+    display: none;
+    text-align: center;
+    font-size: 15px; /* Cố định kích thước chữ cho thông báo */
+    color: #888;
+    margin-top: 25px;
+}
+/* Tùy chỉnh mũi tên lên đậm hơn và to hơn */
+.fas.fa-arrow-up {
+    font-size: 30px;        /* Điều chỉnh kích thước */
+    font-weight: bold;      /* Đảm bảo rằng mũi tên sẽ đậm */
+    color: #303030;         /* Màu sắc của mũi tên */
+    transition: transform 0.3s ease, color 0.3s ease; /* Thêm hiệu ứng hover */
+}
+
+.fas.fa-arrow-up:hover {
+    color: #007bff;         /* Màu khi hover */
+    transform: scale(1.2);   /* Tăng kích thước khi hover */
+}
+.api {
+    text-align: center;
+  background: linear-gradient(to right, blue, purple, lightcoral);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; /* Để chữ trong suốt */
+}
+    #inputPrompt {
+        font-family: 'Poppins', sans-serif;
+    }
