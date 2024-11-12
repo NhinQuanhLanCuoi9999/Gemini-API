@@ -6,4 +6,6 @@ B3: `npm install express node-fetch date-fns`
 B4: `node chat.mjs`
 
 Nếu muốn chạy thì dùng:  
-`npm start`
+`node chat.mjs`
+## Sử dụng
+- Vào 127.0.0.1:3000 , gửi yêu cầu đến thì chatbot sẽ giải đáp
