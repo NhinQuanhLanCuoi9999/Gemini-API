@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">             <title>API Gemini Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">                      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">                         </head>                                                           <body>                                                                <div class="api">
+    <h1>Trò chuyện với Gemini</h1>                                        <p> Được xây dựng trên API mô hình Gemini 1.5 Flash</p>
+     </div>
+    <div id="loadingMessage">Đang xử lý...</div>
+    <form id="queryForm">
+        <textarea id="inputPrompt" rows="4" cols="50" placeholder="Nhập câu hỏi hoặc yêu cầu của bạn"></textarea>
+        <div id="sendButton">
+<i class="fas fa-arrow-up"></i>
+      </div>
+    </form>
+    <div id="resultContainer"></div>
+    <div id="scrollToBottomBtn" style="display:none;">
+   </div>
+  <div class="api2">
+      <p>Gemini API có thể mắc lỗi , hãy đảm bảo bạn kiểm tra ngữ cảnh đầy đủ </p>
+</div>
+  <script src="/script.js"></script>
+</body>
+</html>
