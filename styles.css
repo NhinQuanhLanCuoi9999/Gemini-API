@@ -1,37 +1,27 @@
-   /* Thêm font Poppins và các thiết lập chung cho toàn trang */
-body {
-    font-family: 'Poppins', sans-serif;
-    padding: 20px;
+/* Thêm font Poppins và các thiết lập chung cho toàn trang */
+body {                                                                               font-family: 'Poppins', sans-serif;                                              padding: 20px;
     margin: 0;
-    height: 100%;
-    background-color: #212121;
+    height: 100%;                                                                    background-color: #212121;
     color: #333;
-    font-size: 15px; /* Cố định kích thước chữ cho toàn bộ trang */
-}
+    font-size: 15px; /* Cố định kích thước chữ cho toàn bộ trang */              }
 
 /* Tiêu đề */
-h1 {
-    text-align: center;
+h1 {                                                                                 text-align: center;
     color: #333;
     font-size: 2.5rem;
-    font-weight: 600;
-    margin-bottom: 30px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Form nhập liệu ở cuối trang */
+    font-weight: 600;                                                                margin-bottom: 30px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);                                   }
+                                                                                 /* Form nhập liệu ở cuối trang */
 #queryForm {
     text-align: center;
-    position: fixed;
-    bottom: 0;
+    position: fixed;                                                                 bottom: 0;
     left: 0;
     width: 100%;
     background-color: rgba(255, 255, 255, 0); /* Màu nền trong suốt */
     padding: 15px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-top-left-radius: 15px;
+    justify-content: center;                                                         border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     z-index: 1000;
     margin-bottom: 50px; /* Tạo khoảng cách 50px từ dưới cùng */
@@ -134,6 +124,7 @@ textarea:focus {
     font-size: 15px; /* Cố định kích thước chữ */
     word-wrap: break-word;
     overflow-wrap: break-word;
+    text-align: right;
 }
 
 /* Tin nhắn phản hồi từ Gemini */
@@ -144,6 +135,7 @@ textarea:focus {
     animation-delay: 0.2s;
     font-size: 15px; /* Cố định kích thước chữ */
     word-wrap: break-word;
+    text-align: left;
     overflow-wrap: break-word;
 }
 /* Mã code trong khung */
@@ -236,4 +228,4 @@ code {
 }
     #inputPrompt {
         font-family: 'Poppins', sans-serif;
-    }
+   }
