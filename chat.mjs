@@ -53,7 +53,7 @@ wss.on('connection', (ws, req) => {
                         apiKey,
                         modelLink,
                         ip: req.socket.remoteAddress,
-                        chatHistory: [] // 💾 add context memory
+                        chatHistory: []
                     });
                     ws.send(JSON.stringify({ type: 'auth_success', message: '✅ Xác thực thành công!' }));
                 } else {
