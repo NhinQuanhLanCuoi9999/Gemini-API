@@ -1,83 +1,117 @@
 import express from 'express';
-import path from 'path';                                          import fetch from 'node-fetch';                                   import fs from 'fs';
+import path from 'path';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import { WebSocketServer } from 'ws';
 import { format } from 'date-fns';
-import { enGB } from 'date-fns/locale';                           
+import { enGB } from 'date-fns/locale';
+import http from 'http';
+
 const app = express();
-const port = 3000;                                                
+const port = 3000;
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));                  
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('.'));
+
+const clientSessions = new Map();
+
 function saveLog(ip, prompt, apiResponse) {
     const date = new Date();
     const formattedTime = format(date, 'dd/MM/yyyy | HH:mm:ss', { locale: enGB });
     const logData = `IP: ${ip}\nContent: ${prompt}\nAPI: ${apiResponse}\nThời gian: ${formattedTime}\n~~~~~~~~~~~~~~~~~~~~~~~~~\n`;
-
     fs.appendFile('logs.txt', logData, (err) => {
-        if (err) {
-            console.error('Lỗi khi ghi log:', err);
-        } else {
-            console.log('Log đã được lưu.');
-        }
+        if (err) console.error('Lỗi khi ghi log:', err);
+        else console.log('✅ Log đã được lưu.');
     });
 }
 
-app.post('/callGemini', async (req, res) => {
-    const { prompt } = req.body;
-    const apiKey = 'AIzaSyA5LS3Oob4RagASnJHXeZ1dU0NW7pZOtY4';
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+wss.on('connection', (ws, req) => {
+    ws.send(JSON.stringify({ type: 'auth_request' }));
 
-    const body = {
-        contents: [
-            {
-                role: 'user',
-                parts: [
-                    {
-                        text: prompt
-                    }
-                ]
+    ws.on('message', async (message) => {
+        const data = JSON.parse(message);
+
+        if (data.type === 'auth') {
+            const { apiKey, modelName } = data;
+            const modelLink = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(modelLink, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts: [{ text: 'ping' }] }]
+                    }),
+                });
+                const resData = await response.json();
+
+                if (resData.candidates) {
+                    clientSessions.set(ws, {
+                        apiKey,
+                        modelLink,
+                        ip: req.socket.remoteAddress,
+                        chatHistory: [] // 💾 add context memory
+                    });
+                    ws.send(JSON.stringify({ type: 'auth_success', message: '✅ Xác thực thành công!' }));
+                } else {
+                    ws.send(JSON.stringify({ type: 'auth_fail', message: '❌ API Key hoặc Model sai. Thử lại.' }));
+                }
+            } catch (err) {
+                ws.send(JSON.stringify({ type: 'auth_fail', message: '❌ Lỗi kết nối API. Thử lại.' }));
             }
-        ]
-    };
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-
-        const data = await response.json();
-
-        const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
-
-        if (resultText) {
-            saveLog(req.ip, prompt, resultText);
-            res.json({ result: resultText });
-        } else {
-            const errorMsg = 'Nội dung không phù hợp, vui lòng gửi nội dung khác.';
-            saveLog(req.ip, prompt, errorMsg);
-            res.json({ result: errorMsg });
         }
-    } catch (error) {
-        const errorMsg = 'Đã xảy ra lỗi khi gọi API Gemini';
-        saveLog(req.ip, prompt, errorMsg);
-        res.status(500).json({ error: errorMsg });
-    }
+
+        if (data.type === 'chat') {
+            const session = clientSessions.get(ws);
+            if (!session) {
+                ws.send(JSON.stringify({ type: 'auth_request' }));
+                return;
+            }
+
+            // 💬 Gộp history + prompt
+            const fullConversation = [...session.chatHistory];
+
+            fullConversation.push({
+                role: 'user',
+                parts: [{ text: data.prompt }]
+            });
+
+            const body = {
+                contents: fullConversation
+            };
+
+            try {
+                const response = await fetch(session.modelLink, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const responseData = await response.json();
+                const resultText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ Không có phản hồi';
+
+                // 🧠 Thêm vào history để nhớ tiếp
+                session.chatHistory.push(
+                    { role: 'user', parts: [{ text: data.prompt }] },
+                    { role: 'model', parts: [{ text: resultText }] }
+                );
+
+                saveLog(session.ip, data.prompt, resultText);
+                ws.send(JSON.stringify({ type: 'chat_response', result: resultText }));
+            } catch (err) {
+                ws.send(JSON.stringify({ type: 'chat_response', result: '❌ Lỗi khi gọi API' }));
+            }
+        }
+    });
+
+    ws.on('close', () => {
+        clientSessions.delete(ws);
+    });
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.resolve('index.html'));
-});
-
-app.get('/styles.css', (req, res) => {
-    res.sendFile(path.resolve('styles.css'));
-});
-
-app.get('/script.js', (req, res) => {
-    res.sendFile(path.resolve('script.js'));
-});
-
-app.listen(port, () => {
-    console.log(`Server đang chạy tại http://localhost:${port}`);
+server.listen(port, () => {
+    console.log(`🚀 Server chạy tại http://localhost:${port}`);
 });
