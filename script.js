@@ -5,7 +5,6 @@ const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
 const modelInfoElement = document.getElementById("model-info");
 modelInfoElement.innerText = "Đang load mô hình...";
 
-
 const waitForModelName = setInterval(() => {
     const session = localStorage.getItem("geminiSession");
     if (session) {
@@ -27,12 +26,29 @@ let isAuthenticated = false;
 let apiKey = null;
 let hasSentAuth = false;
 
-function displayUserMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message', 'user-message');
-    messageElement.textContent = 'Bạn: ' + message;
-    resultContainer.appendChild(messageElement);
-    scrollToBottom();
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+
+    const existing = Array.from(container.children).find(toast => toast.textContent.trim() === message);
+    if (existing) return;
+
+    const toast = document.createElement('div');
+    const colors = {
+        success: 'bg-green-600',
+        error: 'bg-red-600',
+        info: 'bg-blue-600',
+        warning: 'bg-yellow-400 text-black'
+    };
+
+    toast.className = `${colors[type]} text-white px-6 py-3 rounded-full shadow-lg mb-4 transition-all duration-500 animate-slide-up pointer-events-auto`;
+    toast.innerHTML = `<span class="text-sm font-semibold">${message}</span>`;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }
 
 function displayGeminiResponse(response) {
@@ -66,17 +82,33 @@ function scrollToBottom() {
 
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text)
-        .then(() => alert('Đã sao chép vào clipboard!'))
-        .catch(err => alert('Lỗi khi sao chép: ' + err));
+        .then(() => showToast('✅ Đã sao chép vào clipboard!', 'success'))
+        .catch(err => showToast('❌ Lỗi khi sao chép: ' + err, 'error'));
+}
+function displayUserMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', 'user-message');
+    messageElement.innerHTML = `<strong>Bạn:</strong> ${message}`;
+    resultContainer.appendChild(messageElement);
+    scrollToBottom();
 }
 
 function sendPrompt(prompt) {
+
+
     if (!isAuthenticated) {
-        alert('Bạn chưa xác thực API Key & Model.');
+        showToast('🚫 Bạn chưa xác thực API Key & Model.', 'error');
         return;
     }
+
+    if (socket.readyState !== WebSocket.OPEN) {
+        showToast('🔌 Kết nối WebSocket chưa sẵn sàng!', 'error');
+        return;
+    }
+
     socket.send(JSON.stringify({ type: 'chat', prompt }));
 }
+
 
 document.getElementById('queryForm').addEventListener('submit', function(event) {
     event.preventDefault();
@@ -105,80 +137,66 @@ socket.onopen = () => {
         hasSentAuth = true;
     }
 };
+
 (() => {
-  const modelOptions = [
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-  ];
+    const modelOptions = [
+        'gemini-2.5-flash-preview-05-20',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-flash',
+    ];
 
-  // Tạo phần tử giao diện
-  const container = document.createElement('div');
-  container.className = 'fixed top-4 right-4 z-50';
-  container.innerHTML = `
-    <button id="modelBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition">
-      Đổi mô hình
-    </button>
-    <div id="dropdownMenu" class="opacity-0 scale-95 hidden origin-top-right transition-all duration-200 ease-out mt-2 bg-white border border-gray-300 rounded-lg shadow-lg">
-      ${modelOptions.map(option => `
-        <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer model-option" data-model="${option}">
-          ${option}
-        </div>
-      `).join('')}
-    </div>
-  `;
-  document.body.appendChild(container);
+    const container = document.getElementById('modelContainer');
+    const menu = document.getElementById('dropdownMenu');
+    const btn = document.getElementById('modelBtn');
 
-  const btn = container.querySelector('#modelBtn');
-  const menu = container.querySelector('#dropdownMenu');
+    menu.innerHTML = modelOptions.map(option => `
+      <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all duration-200 text-sm text-gray-800 model-option" data-model="${option}">
+        <i class="fas fa-microchip mr-2 text-blue-500"></i>${option}
+      </div>
+    `).join('');
 
-  // Toggle dropdown với animation
-  btn.addEventListener('click', () => {
-    const isHidden = menu.classList.contains('hidden');
-    if (isHidden) {
-      menu.classList.remove('hidden');
-      requestAnimationFrame(() => {
-        menu.classList.remove('opacity-0', 'scale-95');
-        menu.classList.add('opacity-100', 'scale-100');
-      });
-    } else {
-      menu.classList.add('opacity-0', 'scale-95');
-      menu.classList.remove('opacity-100', 'scale-100');
-      setTimeout(() => menu.classList.add('hidden'), 200);
-    }
-  });
-
-  // Chọn model → lưu vào localStorage
-  container.querySelectorAll('.model-option').forEach(item => {
-    item.addEventListener('click', () => {
-      const selectedModel = item.getAttribute('data-model');
-      const oldSession = JSON.parse(localStorage.getItem('geminiSession')) || {};
-      const updatedSession = {
-        ...oldSession,
-        modelName: selectedModel,
-      };
-      localStorage.setItem('modelName', selectedModel);
-      localStorage.setItem('geminiSession', JSON.stringify(updatedSession));
-
-      // Ẩn dropdown
-      menu.classList.add('opacity-0', 'scale-95');
-      menu.classList.remove('opacity-100', 'scale-100');
-      setTimeout(() => menu.classList.add('hidden'), 200);
-
-      alert(`✅ Đã chọn mô hình: ${selectedModel}`);
+    btn.addEventListener('click', () => {
+        const isHidden = menu.classList.contains('hidden');
+        if (isHidden) {
+            menu.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                menu.classList.remove('opacity-0', 'scale-95');
+                menu.classList.add('opacity-100', 'scale-100');
+            });
+        } else {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            setTimeout(() => menu.classList.add('hidden'), 300);
+        }
     });
-  });
 
-  // Click ngoài thì ẩn dropdown
-  window.addEventListener('click', (e) => {
-    if (!container.contains(e.target)) {
-      menu.classList.add('opacity-0', 'scale-95');
-      menu.classList.remove('opacity-100', 'scale-100');
-      setTimeout(() => menu.classList.add('hidden'), 200);
-    }
-  });
+    const attachClickHandlers = () => {
+        container.querySelectorAll('.model-option').forEach(item => {
+            item.addEventListener('click', () => {
+                const selectedModel = item.getAttribute('data-model');
+                const oldSession = JSON.parse(localStorage.getItem('geminiSession')) || {};
+                const updatedSession = { ...oldSession, modelName: selectedModel };
+                localStorage.setItem('modelName', selectedModel);
+                localStorage.setItem('geminiSession', JSON.stringify(updatedSession));
+                menu.classList.add('opacity-0', 'scale-95');
+                menu.classList.remove('opacity-100', 'scale-100');
+                setTimeout(() => menu.classList.add('hidden'), 300);
+                showToast(`✅ Đã chọn mô hình: ${selectedModel}`, 'success');
+            });
+        });
+    };
+    attachClickHandlers();
+
+    window.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+            menu.classList.add('opacity-0', 'scale-95');
+            menu.classList.remove('opacity-100', 'scale-100');
+            setTimeout(() => menu.classList.add('hidden'), 300);
+        }
+    });
 })();
+
 function requestAuth() {
     if (hasSentAuth) return;
 
@@ -204,10 +222,9 @@ function requestAuth() {
     apiKeyInput.className = 'bg-[#2c2c2c] text-white border border-purple-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600';
     content.appendChild(apiKeyInput);
 
-    // Tạo dropdown cho model
     const modelDropdown = document.createElement('select');
     modelDropdown.className = 'bg-[#2c2c2c] text-white border border-purple-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600';
-    
+
     const modelOptions = [
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.0-flash',
@@ -247,17 +264,15 @@ function requestAuth() {
             hasSentAuth = true;
             modal.remove();
         } else {
-            alert('🚫 Bạn chưa nhập đủ thông tin!');
+            showToast('🚫 Bạn chưa nhập đủ thông tin!', 'warning');
         }
     };
 
     buttonGroup.appendChild(confirmBtn);
     content.appendChild(buttonGroup);
-
     modal.appendChild(content);
     document.body.appendChild(modal);
 }
-
 
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -268,12 +283,12 @@ socket.onmessage = (event) => {
 
     if (data.type === 'auth_success') {
         isAuthenticated = true;
-        alert(data.message);
+        showToast(data.message, 'success');
     }
 
     if (data.type === 'auth_fail') {
         isAuthenticated = false;
-        alert(data.message);
+        showToast(data.message, 'error');
         localStorage.removeItem('geminiSession');
         hasSentAuth = false;
         requestAuth();
@@ -284,7 +299,7 @@ socket.onmessage = (event) => {
     }
 };
 
-resultContainer.addEventListener('scroll', function() {
+resultContainer.addEventListener('scroll', function () {
     if (resultContainer.scrollTop < resultContainer.scrollHeight - resultContainer.clientHeight) {
         scrollToBottomBtn.style.display = 'flex';
     } else {
@@ -292,7 +307,7 @@ resultContainer.addEventListener('scroll', function() {
     }
 });
 
-scrollToBottomBtn.addEventListener('click', function() {
+scrollToBottomBtn.addEventListener('click', function () {
     scrollToBottom();
     scrollToBottomBtn.style.display = 'none';
 });
