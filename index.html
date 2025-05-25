@@ -45,8 +45,25 @@
   <div id="dropdownMenu" class="opacity-0 scale-95 hidden origin-top-right transition-all duration-300 ease-out mt-3 w-64 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
   </div>
 </div>
+<!-- Nút 3 gạch ngang + modal cá nhân hóa + logic lưu localStorage -->
+<button id="personalizeBtn" class="fixed top-4 left-4 z-50 text-white bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-700 shadow-md">
+  <i class="fas fa-bars"></i>
+</button>
+
+<div id="personalizeModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl w-[90%] max-w-md p-6 space-y-4">
+    <h2 class="text-xl font-semibold">Tùy chỉnh cá nhân hóa</h2>
+    <textarea id="personalizeInput" class="w-full border border-gray-300 rounded-lg p-2" rows="4" placeholder="Nhập thông tin cá nhân hóa..."></textarea>
+    <div class="flex justify-end gap-3">
+      <button id="cancelPersonalize" class="text-gray-600 hover:text-gray-900">Hủy</button>
+      <button id="savePersonalize" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="script/personalize.js"></script>
 
 
-  <script src="/script.js"></script>
+  <script src="script/main.js"></script>
 </body>
 </html>
