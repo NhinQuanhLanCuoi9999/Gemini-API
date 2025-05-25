@@ -52,26 +52,86 @@ function showToast(message, type = 'info') {
 }
 
 function displayGeminiResponse(response) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message', 'gemini-response');
-    try {
-        const htmlContent = marked.parse(response);
-        messageElement.innerHTML = 'Gemini: ' + htmlContent;
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message', 'gemini-response');
 
-        const codeBlocks = messageElement.querySelectorAll('pre code');
-        codeBlocks.forEach(block => {
-            const button = document.createElement('button');
-            button.textContent = 'Copy';
-            button.classList.add('copy-button');
-            button.addEventListener('click', () => copyToClipboard(block.textContent));
-            block.parentElement.appendChild(button);
+  const textContainer = document.createElement('div');
+  textContainer.classList.add('animate-fade-in');
+  messageElement.innerHTML = '<strong class="text-indigo-600">Gemini:</strong> ';
+  messageElement.appendChild(textContainer);
+
+  resultContainer.appendChild(messageElement);
+  scrollToBottom();
+
+  try {
+    const htmlContent = marked.parse(response);
+
+    typeHTMLGradually(textContainer, htmlContent, () => {
+      // Gắn nút Copy vào code blocks
+      const codeBlocks = messageElement.querySelectorAll('pre code');
+      codeBlocks.forEach(block => {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('code-block-wrapper');
+        wrapper.style.position = 'relative';
+        wrapper.style.marginTop = '1rem';
+
+        const pre = block.parentElement;
+        pre.replaceWith(wrapper);
+        wrapper.appendChild(pre);
+
+        const button = document.createElement('button');
+        button.textContent = 'Copy';
+        button.classList.add('copy-button');
+        Object.assign(button.style, {
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          padding: '6px 10px',
+          fontSize: '12px',
+          backgroundColor: '#4f46e5',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          zIndex: '10',
+          opacity: '0.9'
         });
-    } catch (err) {
-        messageElement.textContent = 'Gemini: ' + response;
-    }
-    resultContainer.appendChild(messageElement);
-    scrollToBottom();
+
+        button.addEventListener('click', () => {
+          copyToClipboard(block.textContent);
+          button.textContent = 'Đã copy!';
+          setTimeout(() => button.textContent = 'Copy', 1500);
+        });
+
+        wrapper.appendChild(button);
+      });
+    });
+  } catch (err) {
+    textContainer.textContent = response;
+  }
 }
+
+
+function typeHTMLGradually(container, html, callback) {
+  let index = 0;
+  const speed = 10;
+  const tempDiv = document.createElement('div');
+
+  function type() {
+    if (index <= html.length) {
+      tempDiv.innerHTML = html.slice(0, index);
+      container.innerHTML = tempDiv.innerHTML;
+      index++;
+      setTimeout(type, speed);
+    } else if (callback) {
+      callback();
+    }
+  }
+
+  type();
+}
+
+
 
 function scrollToBottom() {
     resultContainer.scroll({
@@ -88,7 +148,14 @@ function copyToClipboard(text) {
 function displayUserMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'user-message');
-    messageElement.innerHTML = `<strong>Bạn:</strong> ${message}`;
+    messageElement.style.whiteSpace = 'pre-wrap';
+
+    const strong = document.createElement('strong');
+    strong.textContent = 'Bạn:';
+
+    messageElement.appendChild(strong);
+    messageElement.appendChild(document.createTextNode('\n' + message));
+
     resultContainer.appendChild(messageElement);
     scrollToBottom();
 }
