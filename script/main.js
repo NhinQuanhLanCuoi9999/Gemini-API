@@ -26,6 +26,9 @@ let isAuthenticated = false;
 let apiKey = null;
 let hasSentAuth = false;
 
+// NEW: Biến trạng thái để chặn gửi khi đang reply
+let geminiReplying = false;
+
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
 
@@ -105,12 +108,17 @@ function displayGeminiResponse(response) {
 
         wrapper.appendChild(button);
       });
+      // Khi trả lời xong thì mở lại quyền gửi tin nhắn
+      geminiReplying = false;
+      updateInputState();
     });
   } catch (err) {
     textContainer.textContent = response;
+    // Khi trả lời xong thì mở lại quyền gửi tin nhắn
+    geminiReplying = false;
+    updateInputState();
   }
 }
-
 
 function typeHTMLGradually(container, html, callback) {
   let index = 0;
@@ -130,8 +138,6 @@ function typeHTMLGradually(container, html, callback) {
 
   type();
 }
-
-
 
 function scrollToBottom() {
     resultContainer.scroll({
@@ -161,8 +167,6 @@ function displayUserMessage(message) {
 }
 
 function sendPrompt(prompt) {
-
-
     if (!isAuthenticated) {
         showToast('🚫 Bạn chưa xác thực API Key & Model.', 'error');
         return;
@@ -173,12 +177,39 @@ function sendPrompt(prompt) {
         return;
     }
 
+    if (geminiReplying) {
+        showToast('⏳ Đang chờ Gemini trả lời, vui lòng đợi...', 'warning');
+        return;
+    }
+
     socket.send(JSON.stringify({ type: 'chat', prompt }));
+    geminiReplying = true; // Đang reply, khóa gửi tiếp
+    updateInputState();
 }
 
+// Thay đổi hàm updateInputState như sau:
+function updateInputState() {
+    const inputPrompt = document.getElementById('inputPrompt');
+    const sendBtn = document.getElementById('sendButton');
+    if (geminiReplying) {
+        sendBtn.disabled = true;
+        sendBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+        sendBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        // Không chặn nhập nội dung, không đổi placeholder
+    } else {
+        sendBtn.disabled = false;
+        sendBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        sendBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    }
+}
 
+// Sửa event gửi (submit, click, Enter) để kiểm tra geminiReplying
 document.getElementById('queryForm').addEventListener('submit', function(event) {
     event.preventDefault();
+    if (geminiReplying) {
+        showToast('⏳ Đang chờ Gemini trả lời, vui lòng đợi...', 'warning');
+        return;
+    }
     const inputPrompt = document.getElementById('inputPrompt').value;
     if (!inputPrompt) return;
     document.getElementById('inputPrompt').value = '';
@@ -187,11 +218,31 @@ document.getElementById('queryForm').addEventListener('submit', function(event) 
 });
 
 document.getElementById('sendButton').addEventListener('click', function() {
+    if (geminiReplying) {
+        showToast('⏳ Đang chờ Gemini trả lời, vui lòng đợi...', 'warning');
+        return;
+    }
     const inputPrompt = document.getElementById('inputPrompt').value;
     if (!inputPrompt) return;
     document.getElementById('inputPrompt').value = '';
     displayUserMessage(inputPrompt);
     sendPrompt(inputPrompt);
+});
+
+document.getElementById('inputPrompt').addEventListener('keydown', function(e) {
+    if (geminiReplying && e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        showToast('⏳ Đang chờ Gemini trả lời, vui lòng đợi...', 'warning');
+        return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const inputPrompt = this.value;
+        if (!inputPrompt) return;
+        this.value = '';
+        displayUserMessage(inputPrompt);
+        sendPrompt(inputPrompt);
+    }
 });
 
 socket.onopen = () => {
@@ -378,3 +429,6 @@ scrollToBottomBtn.addEventListener('click', function () {
     scrollToBottom();
     scrollToBottomBtn.style.display = 'none';
 });
+
+// Khởi tạo trạng thái input ban đầu
+updateInputState();
