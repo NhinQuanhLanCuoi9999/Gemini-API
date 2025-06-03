@@ -25,16 +25,12 @@ let modelName = localStorage.getItem("modelName") || "không rõ";
 let isAuthenticated = false;
 let apiKey = null;
 let hasSentAuth = false;
-
-// NEW: Biến trạng thái để chặn gửi khi đang reply
 let geminiReplying = false;
 
 function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
-
     const existing = Array.from(container.children).find(toast => toast.textContent.trim() === message);
     if (existing) return;
-
     const toast = document.createElement('div');
     const colors = {
         success: 'bg-green-600',
@@ -42,12 +38,9 @@ function showToast(message, type = 'info') {
         info: 'bg-blue-600',
         warning: 'bg-yellow-400 text-black'
     };
-
     toast.className = `${colors[type]} text-white px-6 py-3 rounded-full shadow-lg mb-4 transition-all duration-500 animate-slide-up pointer-events-auto`;
     toast.innerHTML = `<span class="text-sm font-semibold">${message}</span>`;
-
     container.appendChild(toast);
-
     setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-4');
         setTimeout(() => toast.remove(), 500);
@@ -57,18 +50,14 @@ function showToast(message, type = 'info') {
 function displayGeminiResponse(response) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('message', 'gemini-response');
-
   const textContainer = document.createElement('div');
   textContainer.classList.add('animate-fade-in');
   messageElement.innerHTML = '<strong class="text-indigo-600">Gemini:</strong> ';
   messageElement.appendChild(textContainer);
-
   resultContainer.appendChild(messageElement);
   scrollToBottom();
-
   try {
     const htmlContent = marked.parse(response);
-
     typeHTMLGradually(textContainer, htmlContent, () => {
       // Gắn nút Copy vào code blocks
       const codeBlocks = messageElement.querySelectorAll('pre code');
@@ -77,11 +66,9 @@ function displayGeminiResponse(response) {
         wrapper.classList.add('code-block-wrapper');
         wrapper.style.position = 'relative';
         wrapper.style.marginTop = '1rem';
-
         const pre = block.parentElement;
         pre.replaceWith(wrapper);
         wrapper.appendChild(pre);
-
         const button = document.createElement('button');
         button.textContent = 'Copy';
         button.classList.add('copy-button');
@@ -99,22 +86,18 @@ function displayGeminiResponse(response) {
           zIndex: '10',
           opacity: '0.9'
         });
-
         button.addEventListener('click', () => {
           copyToClipboard(block.textContent);
           button.textContent = 'Đã copy!';
           setTimeout(() => button.textContent = 'Copy', 1500);
         });
-
         wrapper.appendChild(button);
       });
-      // Khi trả lời xong thì mở lại quyền gửi tin nhắn
       geminiReplying = false;
       updateInputState();
     });
   } catch (err) {
     textContainer.textContent = response;
-    // Khi trả lời xong thì mở lại quyền gửi tin nhắn
     geminiReplying = false;
     updateInputState();
   }
@@ -124,7 +107,6 @@ function typeHTMLGradually(container, html, callback) {
   let index = 0;
   const speed = 10;
   const tempDiv = document.createElement('div');
-
   function type() {
     if (index <= html.length) {
       tempDiv.innerHTML = html.slice(0, index);
@@ -135,7 +117,6 @@ function typeHTMLGradually(container, html, callback) {
       callback();
     }
   }
-
   type();
 }
 
@@ -155,13 +136,10 @@ function displayUserMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'user-message');
     messageElement.style.whiteSpace = 'pre-wrap';
-
     const strong = document.createElement('strong');
     strong.textContent = 'Bạn:';
-
     messageElement.appendChild(strong);
     messageElement.appendChild(document.createTextNode('\n' + message));
-
     resultContainer.appendChild(messageElement);
     scrollToBottom();
 }
@@ -171,23 +149,19 @@ function sendPrompt(prompt) {
         showToast('🚫 Bạn chưa xác thực API Key & Model.', 'error');
         return;
     }
-
     if (socket.readyState !== WebSocket.OPEN) {
         showToast('🔌 Kết nối WebSocket chưa sẵn sàng!', 'error');
         return;
     }
-
     if (geminiReplying) {
         showToast('⏳ Đang chờ Gemini trả lời, vui lòng đợi...', 'warning');
         return;
     }
-
     socket.send(JSON.stringify({ type: 'chat', prompt }));
-    geminiReplying = true; // Đang reply, khóa gửi tiếp
+    geminiReplying = true;
     updateInputState();
 }
 
-// Thay đổi hàm updateInputState như sau:
 function updateInputState() {
     const inputPrompt = document.getElementById('inputPrompt');
     const sendBtn = document.getElementById('sendButton');
@@ -195,7 +169,6 @@ function updateInputState() {
         sendBtn.disabled = true;
         sendBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
         sendBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-        // Không chặn nhập nội dung, không đổi placeholder
     } else {
         sendBtn.disabled = false;
         sendBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
@@ -203,7 +176,6 @@ function updateInputState() {
     }
 }
 
-// Sửa event gửi (submit, click, Enter) để kiểm tra geminiReplying
 document.getElementById('queryForm').addEventListener('submit', function(event) {
     event.preventDefault();
     if (geminiReplying) {
@@ -256,125 +228,133 @@ socket.onopen = () => {
     }
 };
 
+// ------ Unified Dropdown for Model & Personalize ------
 (() => {
-    const modelOptions = [
-        'gemini-2.5-flash-preview-05-20',
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-1.5-flash',
-    ];
+  const modelOptions = [
+    'gemini-2.5-flash-preview-05-20',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+  ];
 
-    const container = document.getElementById('modelContainer');
-    const menu = document.getElementById('dropdownMenu');
-    const btn = document.getElementById('modelBtn');
+  const settingsContainer = document.getElementById('settingsContainer');
+  const dropdown = document.getElementById('settingsDropdown');
+  const btn = document.getElementById('settingsBtn');
 
-    menu.innerHTML = modelOptions.map(option => `
-      <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all duration-200 text-sm text-gray-800 model-option" data-model="${option}">
+  // Build dropdown HTML
+  dropdown.innerHTML = `
+    <div class="px-4 py-2 font-semibold text-gray-700 text-base border-b">Chọn mô hình</div>
+    ${modelOptions.map(option => `
+      <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all duration-200 text-sm text-gray-800 settings-model-option" data-model="${option}">
         <i class="fas fa-microchip mr-2 text-blue-500"></i>${option}
       </div>
-    `).join('');
+    `).join('')}
+    <div class="border-t my-1"></div>
+    <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-all duration-200 text-sm text-gray-800 flex items-center settings-personalize-option">
+      <i class="fas fa-user-cog mr-2 text-indigo-500"></i>Cá nhân hóa Gemini
+    </div>
+  `;
 
-    btn.addEventListener('click', () => {
-        const isHidden = menu.classList.contains('hidden');
-        if (isHidden) {
-            menu.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                menu.classList.remove('opacity-0', 'scale-95');
-                menu.classList.add('opacity-100', 'scale-100');
-            });
-        } else {
-            menu.classList.add('opacity-0', 'scale-95');
-            menu.classList.remove('opacity-100', 'scale-100');
-            setTimeout(() => menu.classList.add('hidden'), 300);
-        }
+  btn.addEventListener('click', () => {
+    const isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+      dropdown.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        dropdown.classList.remove('opacity-0', 'scale-90');
+        dropdown.classList.add('opacity-100', 'scale-100');
+      });
+    } else {
+      dropdown.classList.add('opacity-0', 'scale-90');
+      dropdown.classList.remove('opacity-100', 'scale-100');
+      setTimeout(() => dropdown.classList.add('hidden'), 200);
+    }
+  });
+
+  // Model selection
+  dropdown.querySelectorAll('.settings-model-option').forEach(item => {
+    item.addEventListener('click', () => {
+      const selectedModel = item.getAttribute('data-model');
+      const oldSession = JSON.parse(localStorage.getItem('geminiSession')) || {};
+      const updatedSession = { ...oldSession, modelName: selectedModel };
+      localStorage.setItem('modelName', selectedModel);
+      localStorage.setItem('geminiSession', JSON.stringify(updatedSession));
+      dropdown.classList.add('opacity-0', 'scale-90');
+      dropdown.classList.remove('opacity-100', 'scale-100');
+      setTimeout(() => dropdown.classList.add('hidden'), 200);
+      showToast(`✅ Đã chọn mô hình: ${selectedModel}`, 'success');
+      // Cập nhật model-info
+      modelInfoElement.innerText = `Được xây dựng trên API mô hình ${selectedModel}`;
     });
+  });
 
-    const attachClickHandlers = () => {
-        container.querySelectorAll('.model-option').forEach(item => {
-            item.addEventListener('click', () => {
-                const selectedModel = item.getAttribute('data-model');
-                const oldSession = JSON.parse(localStorage.getItem('geminiSession')) || {};
-                const updatedSession = { ...oldSession, modelName: selectedModel };
-                localStorage.setItem('modelName', selectedModel);
-                localStorage.setItem('geminiSession', JSON.stringify(updatedSession));
-                menu.classList.add('opacity-0', 'scale-95');
-                menu.classList.remove('opacity-100', 'scale-100');
-                setTimeout(() => menu.classList.add('hidden'), 300);
-                showToast(`✅ Đã chọn mô hình: ${selectedModel}`, 'success');
-            });
-        });
-    };
-    attachClickHandlers();
+  // Personalize selection
+  dropdown.querySelector('.settings-personalize-option').addEventListener('click', () => {
+    dropdown.classList.add('opacity-0', 'scale-90');
+    dropdown.classList.remove('opacity-100', 'scale-100');
+    setTimeout(() => dropdown.classList.add('hidden'), 200);
 
-    window.addEventListener('click', (e) => {
-        if (!container.contains(e.target)) {
-            menu.classList.add('opacity-0', 'scale-95');
-            menu.classList.remove('opacity-100', 'scale-100');
-            setTimeout(() => menu.classList.add('hidden'), 300);
-        }
-    });
+    // Load lại cá nhân hóa mỗi lần mở modal
+    const personalizeInput = document.getElementById('personalizeInput');
+    personalizeInput.value = localStorage.getItem('geminiPersonalize') || '';
+    document.getElementById('personalizeModal').classList.remove('hidden');
+  });
+
+  window.addEventListener('click', (e) => {
+    if (!settingsContainer.contains(e.target)) {
+      dropdown.classList.add('opacity-0', 'scale-90');
+      dropdown.classList.remove('opacity-100', 'scale-100');
+      setTimeout(() => dropdown.classList.add('hidden'), 200);
+    }
+  });
 })();
 
 function requestAuth() {
     if (hasSentAuth) return;
-
     if (document.getElementById('authModal')) {
         document.getElementById('authModal').classList.remove('hidden');
         return;
     }
-
     const modal = document.createElement('div');
     modal.id = 'authModal';
     modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
-
     const content = document.createElement('div');
     content.className = 'bg-[#1a1a1a] border-2 border-purple-600 text-white rounded-2xl shadow-2xl p-6 w-[90%] max-w-md flex flex-col gap-4 animate-fade-in';
-
     const title = document.createElement('h2');
     title.textContent = '🔮 Nhập thông tin xác thực';
     title.className = 'text-2xl font-bold text-center text-purple-300';
     content.appendChild(title);
-
     const apiKeyInput = document.createElement('input');
     apiKeyInput.placeholder = '🔑 Nhập API Key...';
     apiKeyInput.className = 'bg-[#2c2c2c] text-white border border-purple-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600';
     content.appendChild(apiKeyInput);
-
     const modelDropdown = document.createElement('select');
     modelDropdown.className = 'bg-[#2c2c2c] text-white border border-purple-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600';
-
     const modelOptions = [
         'gemini-2.5-flash-preview-05-20',
         'gemini-2.0-flash',
         'gemini-2.0-flash-lite',
         'gemini-1.5-flash',
     ];
-
     const defaultOption = document.createElement('option');
     defaultOption.textContent = '📦 Chọn model Gemini...';
     defaultOption.disabled = true;
     defaultOption.selected = true;
     modelDropdown.appendChild(defaultOption);
-
     modelOptions.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
         option.textContent = model;
         modelDropdown.appendChild(option);
     });
-
     content.appendChild(modelDropdown);
-
     const buttonGroup = document.createElement('div');
     buttonGroup.className = 'flex justify-center';
-
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = '✨ Xác nhận';
     confirmBtn.className = 'px-6 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold transition shadow-lg';
     confirmBtn.onclick = () => {
         const inputKey = apiKeyInput.value.trim();
         const inputModel = modelDropdown.value;
-
         if (inputKey && inputModel && inputModel !== defaultOption.textContent) {
             localStorage.setItem('geminiSession', JSON.stringify({ apiKey: inputKey, modelName: inputModel }));
             localStorage.setItem('modelName', inputModel);
@@ -385,7 +365,6 @@ function requestAuth() {
             showToast('🚫 Bạn chưa nhập đủ thông tin!', 'warning');
         }
     };
-
     buttonGroup.appendChild(confirmBtn);
     content.appendChild(buttonGroup);
     modal.appendChild(content);
@@ -394,16 +373,13 @@ function requestAuth() {
 
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-
     if (data.type === 'auth_request') {
         requestAuth();
     }
-
     if (data.type === 'auth_success') {
         isAuthenticated = true;
         showToast(data.message, 'success');
     }
-
     if (data.type === 'auth_fail') {
         isAuthenticated = false;
         showToast(data.message, 'error');
@@ -411,7 +387,6 @@ socket.onmessage = (event) => {
         hasSentAuth = false;
         requestAuth();
     }
-
     if (data.type === 'chat_response') {
         displayGeminiResponse(data.result);
     }
@@ -430,5 +405,8 @@ scrollToBottomBtn.addEventListener('click', function () {
     scrollToBottomBtn.style.display = 'none';
 });
 
-// Khởi tạo trạng thái input ban đầu
 updateInputState();
+
+document.getElementById('cancelPersonalize').onclick = function() {
+  document.getElementById('personalizeModal').classList.add('hidden');
+};
